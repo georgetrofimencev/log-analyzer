@@ -24,6 +24,14 @@ config = {
     "LOGGING_FILE": "test.log",
 }
 
+parser = argparse.ArgumentParser(description="Nginx logs analyzer")
+parser.add_argument(
+    "--config",
+    dest="config_path",
+    help="Path of config. If not specified " "script downloads default settings",
+)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def start_logging(cfg):
     logging.basicConfig(
@@ -57,15 +65,6 @@ def logger_decorator(func):
             sys.exit(1)
 
     return wrapper
-
-
-parser = argparse.ArgumentParser(description="Nginx logs analyzer")
-parser.add_argument(
-    "--config",
-    dest="config_path",
-    help="Path of config. If not specified " "script downloads default settings",
-)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_report_name(log_name):
