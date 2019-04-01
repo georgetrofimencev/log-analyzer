@@ -1,0 +1,6 @@
+homework.pdf
+*.pyc
+venv/
+.idea/
+.DS_Store
+log/
