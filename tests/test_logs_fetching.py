@@ -3,7 +3,6 @@ from logs_analyzer import \
     BASE_DIR, \
     get_latest_logfile, \
     report_already_exists, \
-    logger_decorator,\
     get_report_name
 
 
@@ -34,14 +33,6 @@ class TestLogsNginxFetcherCase(unittest.TestCase):
         logfile = get_latest_logfile(test_logs_dir)
         report_name = get_report_name(logfile)
         self.assertEqual(report_name, 'report-2018.07.30.html')
-
-    def test_check_except_catching(self):
-        @logger_decorator
-        def check_func():
-            raise Exception
-        with self.assertRaises(SystemExit) as cm:
-            check_func()
-        self.assertEqual(cm.exception.code, 1)
 
 
 if __name__ == '__main__':
