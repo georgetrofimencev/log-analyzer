@@ -19,7 +19,7 @@ NGINX_PATTERN = re.compile(r'^\S+\s\S+\s{2}\S+\s\[.*?\]\s\"\S+\s(\S+)\s\S+\"\s\S
 
 config = {
     "REPORT_SIZE": 1000,
-    "REPORT_DIR": ".reports/",
+    "REPORT_DIR": ".reports/tests/test/",
     "LOG_DIR": "../log_analyzer/log/",
     "LOGGING_FILE": "test.log",
 }
@@ -40,7 +40,7 @@ def start_logging(cfg):
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s [%(levelname)s] %(message)s",
-     #   filename=cfg.get("LOGGING_FILE"),
+        filename=cfg.get("LOGGING_FILE"),
     )
 
 
@@ -185,6 +185,6 @@ if __name__ == "__main__":
     conf_path = args.config_path
     try:
         main(conf_path, config)
-    except Exception as e:
-        logger.exception(e)
+    except BaseException as exc:
+        logger.exception(exc)
         sys.exit(1)
