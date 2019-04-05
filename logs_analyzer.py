@@ -193,6 +193,7 @@ def main(cfg_path, default):
     report_path = get_report_path(logfile, cfg["REPORT_DIR"])
     if report_already_exists(report_path):
         logger.info(f"Report of latest logfile already exists")
+        logger.info("Script completed.")
         return None
     data = analyze(cfg["REPORT_SIZE"], logfile)
     render_html_report(report_path, data) if data else logger.info("No Data for Reporting...")
