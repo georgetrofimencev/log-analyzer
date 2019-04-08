@@ -32,7 +32,7 @@ NGINX_PATTERN = re.compile(
 config = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": ".reports/tests/test/",
-    "LOG_DIR": "../log_analyzer/log/",
+    "LOG_DIR": "../log_analyzer/",
    # "LOGGING_FILE": "test.log",
 }
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -68,25 +68,14 @@ def load_config_from_path(config_path: str, default):
     return default_config
 
 
-def get_report_name(date):
-    part_date = date.strftime('%Y-%m-%d')
-    return f"report-{part_date}.html"
-
-
 def get_report_path(log, report_dir):
-    report_name = get_report_name(log.date)
-    path = os.path.join(report_dir, report_name)
+    part_date = log.date.strftime('%Y-%m-%d')
+    path = os.path.join(report_dir, f"report-{part_date}.html")
     return path
 
 
-def report_already_exists(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(os.path.split(path)[0])
-        except FileExistsError:
-            pass
-        return False
-    return True
+def is_report_already_exists(path):
+    return True if os.path.exists(path) else False
 
 
 def log_date(log_file):
@@ -117,30 +106,22 @@ def parse_line(line):
     return match.groupdict() if match else None
 
 
-def reading_file(log_path):
-    with (
-        gzip.open(log_path, "rb")
-        if log_path.endswith(".gz")
-        else open(log_path, encoding="utf-8")
-    ) as file:
-        for line in file:
-            yield line if line else None
-
-
-def analyze(report_size, logfile):
-    logger.info("Starting to analyze nginx file with logs: {}...".format(logfile.path))
+def analyze(path, report_size):
+    logger.info("Starting to analyze nginx file with logs: {}...".format(path))
     logs_statistics = collections.defaultdict(list)
     total_count = total_time = errors_count = 0
-    for line in reading_file(logfile.path):
-        total_count += 1
-        res = parse_line(line)
-        if not res:
-            errors_count += 1
-        else:
-            request_time = float(res["request_time"])
-            url = res["url"]
-            total_time += request_time
-            logs_statistics[url].append(request_time)
+    file_open = gzip.open if path.endswith('.gz') else open
+    with file_open(path, 'rb') as file:
+        for line in file:
+            total_count += 1
+            res = parse_line(line.decode('utf-8'))
+            if not res:
+                errors_count += 1
+            else:
+                request_time = float(res["request_time"])
+                url = res["url"]
+                total_time += request_time
+                logs_statistics[url].append(request_time)
 
     if errors_count >= MAX_ERRORS_LIMIT * total_count:
         logger.error("Cannot read the file...")
@@ -186,17 +167,34 @@ def prepare_report_data(logs_statistics, total_count, total_time, report_size):
     return report_data[:report_size]
 
 
+def create_report_dir(path):
+    try:
+        os.makedirs(os.path.split(path)[0])
+    except FileExistsError:
+        logger.debug('Directory with report already exists...')
+
+
 def main(cfg_path, default):
     cfg = default if not cfg_path else load_config_from_path(cfg_path, default)
     start_logging(cfg)
     logfile = get_latest_logfile(cfg["LOG_DIR"])
+
+    if not logfile:
+        raise FileNotFoundError('Log file not found')
     report_path = get_report_path(logfile, cfg["REPORT_DIR"])
-    if report_already_exists(report_path):
-        logger.info(f"Report of latest logfile already exists")
-        logger.info("Script completed.")
+
+    if is_report_already_exists(report_path):
+        logger.info("Report of latest logfile already exists\n Script completed.")
         return None
-    data = analyze(cfg["REPORT_SIZE"], logfile)
-    render_html_report(report_path, data) if data else logger.info("No Data for Reporting...")
+    else:
+        create_report_dir(report_path)
+
+    data = analyze(logfile.path, cfg["REPORT_SIZE"])
+    if data:
+        render_html_report(report_path, data)
+    else:
+        logger.info("No Data for Reporting...")
+
     logger.info("Script completed.")
 
 
